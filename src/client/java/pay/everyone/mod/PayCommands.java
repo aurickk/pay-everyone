@@ -1,6 +1,7 @@
 package pay.everyone.mod;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -13,21 +14,21 @@ import java.util.Set;
 
 public class PayCommands {
     private static final PayManager payManager = PayManager.getInstance();
-
+    
     // Suggestion provider for player names (for exclude command)
     private static final SuggestionProvider<FabricClientCommandSource> PLAYER_SUGGESTIONS = (context, builder) -> {
         List<String> players = payManager.getPlayersForAutocomplete();
         String input = builder.getRemaining();
-
+        
         // Handle space-separated player names - get the last partial name being typed
         String[] parts = input.split("\\s+");
         String lastPart = parts.length > 0 ? parts[parts.length - 1].toLowerCase() : "";
-
+        
         // If input ends with space, we're starting a new name
         if (input.endsWith(" ") || input.isEmpty()) {
             lastPart = "";
         }
-
+        
         // Calculate the start position for suggestions
         int startPos = builder.getStart();
         if (parts.length > 1 || (parts.length == 1 && input.endsWith(" "))) {
@@ -37,10 +38,10 @@ public class PayCommands {
                 startPos = builder.getStart() + lastSpaceIndex + 1;
             }
         }
-
+        
         // Create a new builder at the correct position
         var newBuilder = builder.createOffset(startPos);
-
+        
         for (String player : players) {
             if (player.toLowerCase().startsWith(lastPart) && !payManager.isExcluded(player)) {
                 newBuilder.suggest(player);
@@ -89,40 +90,40 @@ public class PayCommands {
                         .executes(context -> {
                             context.getSource().sendFeedback(Component.literal("§6========== Pay Everyone - Command Guide =========="));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
                             context.getSource().sendFeedback(Component.literal("§eMain Commands:"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall <amount> §7- Pay all players (default 1000ms delay)"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall <amount> <delay> §7- Pay with custom delay (ms)"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall stop §7- Stop payment process"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall info §7- Show payment information"));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
                             context.getSource().sendFeedback(Component.literal("§eExamples:"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall 100000 §7- Pay 100k to all (1000ms delay)"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall 300-3000 500 §7- Pay random 300-3k (500ms delay)"));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
                             context.getSource().sendFeedback(Component.literal("§ePlayer Management:"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall add <players> §7- Add players to payment list"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall exclude <players> §7- Exclude players from payments"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall remove exclude <players> §7- Remove from exclusion list"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall remove add <players> §7- Remove from add list"));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
                             context.getSource().sendFeedback(Component.literal("§eClear Commands:"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall clear exclude §7- Clear excluded players"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall clear add §7- Clear manually added players"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall clear tabscan §7- Clear tab scan results"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall clear all §7- Clear all lists"));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
                             context.getSource().sendFeedback(Component.literal("§eTab Scan (Discover Players):"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall tabscan §7- Start scan (200ms interval)"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall tabscan <interval> §7- Custom interval (ms)"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall tabscan stop §7- Stop scan in progress"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall tabscan debug §7- Toggle debug mode"));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
                             context.getSource().sendFeedback(Component.literal("§eList Commands:"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall list §7- Show debug information"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall list tabscan §7- List tab scan players"));
@@ -130,7 +131,14 @@ public class PayCommands {
                             context.getSource().sendFeedback(Component.literal("§f  /payall list exclude §7- List excluded players"));
                             context.getSource().sendFeedback(Component.literal("§f  /payall list tablist §7- List tab menu players"));
                             context.getSource().sendFeedback(Component.literal(""));
-
+                            
+                            context.getSource().sendFeedback(Component.literal("§eAuto-Confirm (for servers with confirmation menus):"));
+                            context.getSource().sendFeedback(Component.literal("§f  /payall confirmclickslot §7- Show current status"));
+                            context.getSource().sendFeedback(Component.literal("§f  /payall confirmclickslot <slot> §7- Set slot to auto-click"));
+                            context.getSource().sendFeedback(Component.literal("§f  /payall confirmclickslot <slot> <delay> §7- Set slot and delay"));
+                            context.getSource().sendFeedback(Component.literal("§f  /payall confirmclickslot off §7- Disable auto-confirm"));
+                            context.getSource().sendFeedback(Component.literal(""));
+                            
                             context.getSource().sendFeedback(Component.literal("§7Tip: Use /payall tabscan to discover players beyond tab list limit"));
                             context.getSource().sendFeedback(Component.literal("§6================================================"));
                             return 1;
@@ -142,7 +150,7 @@ public class PayCommands {
                                 .executes(context -> {
                                     String playersArg = StringArgumentType.getString(context, "players");
                                     String[] players = playersArg.split("\\s+");
-
+                                    
                                     if (players.length == 0 || (players.length == 1 && players[0].isEmpty())) {
                                         context.getSource().sendError(Component.literal("§c[Pay Everyone] Please specify at least one player name"));
                                         return 0;
@@ -150,8 +158,8 @@ public class PayCommands {
 
                                     payManager.addExcludedPlayers(players);
                                     context.getSource().sendFeedback(Component.literal(
-                                            String.format("§a[Pay Everyone] Added %d player(s) to exclusion list: %s",
-                                                    players.length, String.join(", ", players))
+                                        String.format("§a[Pay Everyone] Added %d player(s) to exclusion list: %s", 
+                                            players.length, String.join(", ", players))
                                     ));
                                     return 1;
                                 })))
@@ -194,38 +202,38 @@ public class PayCommands {
                             int exclusionCount = payManager.getExclusionCount();
                             int manualCount = payManager.getManualPlayerCount();
                             Set<String> excluded = payManager.getExcludedPlayers();
-
+                            
                             context.getSource().sendFeedback(Component.literal("§6[Pay Everyone] Payment Information:"));
                             context.getSource().sendFeedback(Component.literal(
-                                    String.format("§e  Total players on pay list: §f%d", onlineCount)
+                                String.format("§e  Total players on pay list: §f%d", onlineCount)
                             ));
                             int tabScanCount = payManager.getTabScanPlayerCount();
                             if (manualCount > 0) {
                                 context.getSource().sendFeedback(Component.literal(
-                                        String.format("§e  Manual players added: §f%d", manualCount)
+                                    String.format("§e  Manual players added: §f%d", manualCount)
                                 ));
                             } else if (tabScanCount > 0) {
                                 context.getSource().sendFeedback(Component.literal(
-                                        String.format("§e  Players from tab scan: §f%d", tabScanCount)
+                                    String.format("§e  Players from tab scan: §f%d", tabScanCount)
                                 ));
                             } else {
                                 context.getSource().sendFeedback(Component.literal(
-                                        "§7  Note: Running payall without tabscan on large servers may not log all online players."
+                                    "§7  Note: Running payall without tabscan on large servers may not log all online players."
                                 ));
                                 context.getSource().sendFeedback(Component.literal(
-                                        "§7  Use '/payall tabscan' or '/payall add <players>' for more players."
+                                    "§7  Use '/payall tabscan' or '/payall add <players>' for more players."
                                 ));
                             }
                             context.getSource().sendFeedback(Component.literal(
-                                    String.format("§e  Excluded players: §f%d", exclusionCount)
+                                String.format("§e  Excluded players: §f%d", exclusionCount)
                             ));
-
+                            
                             if (!excluded.isEmpty()) {
                                 context.getSource().sendFeedback(Component.literal(
-                                        String.format("§e  Excluded: §f%s", String.join(", ", excluded))
+                                    String.format("§e  Excluded: §f%s", String.join(", ", excluded))
                                 ));
                             }
-
+                            
                             return 1;
                         }))
                 // Subcommand: /payall add <players>
@@ -234,33 +242,33 @@ public class PayCommands {
                                 .executes(context -> {
                                     String playersArg = StringArgumentType.getString(context, "players");
                                     String[] players = playersArg.split("[, ]+"); // Split by comma or space
-
+                                    
                                     if (players.length == 0 || (players.length == 1 && players[0].isEmpty())) {
                                         context.getSource().sendError(Component.literal("§c[Pay Everyone] Please specify at least one player name"));
                                         return 0;
                                     }
 
                                     PayManager.AddPlayersResult result = payManager.addManualPlayers(players);
-
+                                    
                                     if (!result.added.isEmpty()) {
                                         context.getSource().sendFeedback(Component.literal(
-                                                String.format("§a[Pay Everyone] Added %d player(s) to payment list: %s",
-                                                        result.added.size(), String.join(", ", result.added))
+                                            String.format("§a[Pay Everyone] Added %d player(s) to payment list: %s", 
+                                                result.added.size(), String.join(", ", result.added))
                                         ));
                                     }
-
+                                    
                                     if (!result.duplicates.isEmpty()) {
                                         context.getSource().sendFeedback(Component.literal(
-                                                String.format("§e[Pay Everyone] Skipped %d player(s) already on list: %s",
-                                                        result.duplicates.size(), String.join(", ", result.duplicates))
+                                            String.format("§e[Pay Everyone] Skipped %d player(s) already on list: %s", 
+                                                result.duplicates.size(), String.join(", ", result.duplicates))
                                         ));
                                     }
-
+                                    
                                     if (result.added.isEmpty() && result.duplicates.isEmpty()) {
                                         context.getSource().sendError(Component.literal("§c[Pay Everyone] No valid player names provided"));
                                         return 0;
                                     }
-
+                                    
                                     return 1;
                                 })))
                 // Subcommand: /payall stop
@@ -312,7 +320,7 @@ public class PayCommands {
                                     boolean newState = !payManager.isDebugMode();
                                     payManager.setDebugMode(newState);
                                     context.getSource().sendFeedback(Component.literal(
-                                            String.format("§6[Pay Everyone] Tab scan debug: %s", newState ? "§aENABLED" : "§cDISABLED")
+                                        String.format("§6[Pay Everyone] Tab scan debug: %s", newState ? "§aENABLED" : "§cDISABLED")
                                     ));
                                     return 1;
                                 })
@@ -336,7 +344,7 @@ public class PayCommands {
                                         .executes(context -> {
                                             String playersArg = StringArgumentType.getString(context, "players");
                                             String[] players = playersArg.split("\\s+");
-
+                                            
                                             if (players.length == 0 || (players.length == 1 && players[0].isEmpty())) {
                                                 context.getSource().sendError(Component.literal("§c[Pay Everyone] Please specify at least one player name"));
                                                 return 0;
@@ -345,12 +353,12 @@ public class PayCommands {
                                             List<String> removed = payManager.removeExcludedPlayers(players);
                                             if (removed.isEmpty()) {
                                                 context.getSource().sendFeedback(Component.literal(
-                                                        "§e[Pay Everyone] None of the specified players were in the exclusion list"
+                                                    "§e[Pay Everyone] None of the specified players were in the exclusion list"
                                                 ));
                                             } else {
                                                 context.getSource().sendFeedback(Component.literal(
-                                                        String.format("§a[Pay Everyone] Removed %d player(s) from exclusion list: %s",
-                                                                removed.size(), String.join(", ", removed))
+                                                    String.format("§a[Pay Everyone] Removed %d player(s) from exclusion list: %s", 
+                                                        removed.size(), String.join(", ", removed))
                                                 ));
                                             }
                                             return 1;
@@ -361,7 +369,7 @@ public class PayCommands {
                                         .executes(context -> {
                                             String playersArg = StringArgumentType.getString(context, "players");
                                             String[] players = playersArg.split("\\s+");
-
+                                            
                                             if (players.length == 0 || (players.length == 1 && players[0].isEmpty())) {
                                                 context.getSource().sendError(Component.literal("§c[Pay Everyone] Please specify at least one player name"));
                                                 return 0;
@@ -370,12 +378,12 @@ public class PayCommands {
                                             List<String> removed = payManager.removeManualPlayers(players);
                                             if (removed.isEmpty()) {
                                                 context.getSource().sendFeedback(Component.literal(
-                                                        "§e[Pay Everyone] None of the specified players were in the add list"
+                                                    "§e[Pay Everyone] None of the specified players were in the add list"
                                                 ));
                                             } else {
                                                 context.getSource().sendFeedback(Component.literal(
-                                                        String.format("§a[Pay Everyone] Removed %d player(s) from add list: %s",
-                                                                removed.size(), String.join(", ", removed))
+                                                    String.format("§a[Pay Everyone] Removed %d player(s) from add list: %s", 
+                                                        removed.size(), String.join(", ", removed))
                                                 ));
                                             }
                                             return 1;
@@ -437,6 +445,58 @@ public class PayCommands {
                                         context.getSource().sendFeedback(Component.literal("§f  " + String.join(", ", players)));
                                     }
                                     return 1;
-                                }))));
+                                })))
+                // Subcommand: /payall confirmclickslot - auto-click confirmation menu slot
+                .then(ClientCommandManager.literal("confirmclickslot")
+                        // Show current status when no argument
+                        .executes(context -> {
+                            int currentSlot = payManager.getConfirmClickSlot();
+                            if (currentSlot < 0) {
+                                context.getSource().sendFeedback(Component.literal("§6[Pay Everyone] Auto-confirm: §cDISABLED"));
+                                context.getSource().sendFeedback(Component.literal("§7  Use '/payall confirmclickslot <slotid>' to enable"));
+                            } else {
+                                context.getSource().sendFeedback(Component.literal(
+                                    String.format("§6[Pay Everyone] Auto-confirm: §aENABLED §7(slot %d, %dms delay)", 
+                                        currentSlot, payManager.getConfirmClickDelay())
+                                ));
+                                context.getSource().sendFeedback(Component.literal("§7  Use '/payall confirmclickslot off' to disable"));
+                            }
+                            return 1;
+                        })
+                        // /payall confirmclickslot off - disable auto-confirm
+                        .then(ClientCommandManager.literal("off")
+                                .executes(context -> {
+                                    payManager.setConfirmClickSlot(-1);
+                                    context.getSource().sendFeedback(Component.literal("§a[Pay Everyone] Auto-confirm disabled"));
+                                    return 1;
+                                }))
+                        // /payall confirmclickslot <slotid> - set slot to click
+                        .then(ClientCommandManager.argument("slotid", IntegerArgumentType.integer(0))
+                                .executes(context -> {
+                                    int slotId = IntegerArgumentType.getInteger(context, "slotid");
+                                    payManager.setConfirmClickSlot(slotId);
+                                    context.getSource().sendFeedback(Component.literal(
+                                        String.format("§a[Pay Everyone] Auto-confirm enabled! Will click slot %d on confirmation menus.", slotId)
+                                    ));
+                                    context.getSource().sendFeedback(Component.literal(
+                                        "§6⚠ WARNING: Stay still while payments run - menus will auto-close!"
+                                    ));
+                                    return 1;
+                                })
+                                // /payall confirmclickslot <slotid> <delay> - set slot and delay
+                                .then(ClientCommandManager.argument("delay", LongArgumentType.longArg(50, 2000))
+                                        .executes(context -> {
+                                            int slotId = IntegerArgumentType.getInteger(context, "slotid");
+                                            long delay = LongArgumentType.getLong(context, "delay");
+                                            payManager.setConfirmClickSlot(slotId);
+                                            payManager.setConfirmClickDelay(delay);
+                                            context.getSource().sendFeedback(Component.literal(
+                                                String.format("§a[Pay Everyone] Auto-confirm enabled! Slot: %d, Delay: %dms", slotId, delay)
+                                            ));
+                                            context.getSource().sendFeedback(Component.literal(
+                                                "§6⚠ WARNING: Stay still while payments run - menus will auto-close!"
+                                            ));
+                                            return 1;
+                                        })))));
     }
 }
