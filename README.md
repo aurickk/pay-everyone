@@ -1,7 +1,8 @@
 
 <p align="center">
 
-<img src="https://github.com/user-attachments/assets/a36bd173-9b86-488a-836f-105e80e404d7" alt="fake-mister-beast" width="15%"/>
+
+<img src="https://github.com/user-attachments/assets/14690fb8-6bfc-4e4c-8fed-d533ec0c3781" alt="fake-mister-beast" width="15%"/>
 </p>
 <h1 align="center">Pay Everyone</h1>
 
