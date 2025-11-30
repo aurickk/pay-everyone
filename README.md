@@ -115,18 +115,18 @@ Manually add players to the payment list.
 ```
 ## How It Works
 
-1. **Player Discovery**: The mod collects players from multiple sources:
+ **Player Discovery**: The mod collects players from multiple sources:
    - Default tab menu (limited to ~150 players)
    - Tab scan (queries server autocomplete for `/pay` command)
    - Manual player list (you add players)
 
-2. **Payment Process**: 
+**Payment Process**: 
    - Player order are randomized before payment
    - Wait for a set interval between each command excution
    - Excluded players are skipped
    - Process can be stopped at any time
 
-3. **Tab Scan**: 
+**Tab Scan**: 
    - Sends autocomplete requests for `/pay` command with different prefixes
    - Scans through: empty, a-z, 0-9, and underscore
    - Collects all player names from server responses
