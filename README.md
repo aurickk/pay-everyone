@@ -29,7 +29,7 @@
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for your Minecraft version
 2. Download the latest [Fabric API](https://modrinth.com/mod/fabric-api) for your Minecraft version
-3. Download the latest `pay-everyone-[version]-[mod_version].jar` from the [Releases](https://github.com/aurickk/pay-everyone/) page
+3. Download the latest `pay-everyone-[version]-[mod_version].jar` from the [Releases](https://github.com/aurickk/pay-everyone/releases/) page
 4. Place both mods in your `.minecraft/mods` folder
 5. Launch Minecraft
 
