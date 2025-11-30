@@ -39,7 +39,7 @@
 
 #### Show Pay info
 ```
-/payinfo
+/payall info
 ```
 <img width="570" height="105" alt="Screenshot 2025-11-30 130108" src="https://github.com/user-attachments/assets/fcd8f183-0183-4341-a3d1-a41588f4ef62" />
 
