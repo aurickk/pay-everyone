@@ -22,6 +22,10 @@ public class PayManager {
     private volatile int tabScanRequestId = 0; // Track our request ID
     private final Object playerListLock = new Object();
     private volatile boolean debugMode = false; // Debug mode toggle
+    
+    // Auto-confirm settings
+    private volatile int confirmClickSlot = -1; // -1 means disabled
+    private volatile long confirmClickDelay = 100; // Delay before clicking (ms)
 
     private PayManager() {}
 
@@ -62,7 +66,7 @@ public class PayManager {
     public AddPlayersResult addManualPlayers(String... players) {
         List<String> added = new ArrayList<>();
         List<String> duplicates = new ArrayList<>();
-
+        
         synchronized (playerListLock) {
             for (String player : players) {
                 String cleaned = player.trim();
@@ -76,14 +80,14 @@ public class PayManager {
                 }
             }
         }
-
+        
         return new AddPlayersResult(added, duplicates);
     }
-
+    
     public static class AddPlayersResult {
         public final List<String> added;
         public final List<String> duplicates;
-
+        
         public AddPlayersResult(List<String> added, List<String> duplicates) {
             this.added = added;
             this.duplicates = duplicates;
@@ -184,35 +188,35 @@ public class PayManager {
     public void queryPlayersViaTabComplete(long intervalMs) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-
+        
         if (player == null || player.connection == null) {
             return;
         }
-
+        
         if (isTabScanning) {
             player.displayClientMessage(net.minecraft.network.chat.Component.literal(
                 "§c[Pay Everyone] Tab scan already in progress..."
             ), false);
             return;
         }
-
+        
         scanInterval = intervalMs;
-
+        
         isTabScanning = true;
         currentScanIndex = 0;
         scanCompleted = false;
         processedRequestIds.clear(); // Clear processed IDs for new scan
-
+        
         // Clear previous scan results
         synchronized (playerListLock) {
             tabScanPlayerList.clear();
         }
-
+        
         player.displayClientMessage(net.minecraft.network.chat.Component.literal(
-            String.format("§e[Pay Everyone] Starting tab scan (%d prefixes, %dms interval)...",
+            String.format("§e[Pay Everyone] Starting tab scan (%d prefixes, %dms interval)...", 
                 SCAN_PREFIXES_SINGLE.length, scanInterval)
         ), false);
-
+        
         // Start scanning in a separate thread to avoid blocking
         CompletableFuture.runAsync(() -> runSequentialScan());
     }
@@ -226,13 +230,13 @@ public class PayManager {
 
     private void runSequentialScan() {
         Minecraft minecraft = Minecraft.getInstance();
-
+        
         for (int i = 0; i < SCAN_PREFIXES_SINGLE.length && isTabScanning; i++) {
             final int index = i; // Final copy for use in lambda
             currentScanIndex = i;
             String prefix = SCAN_PREFIXES_SINGLE[i];
             int requestId = 10000 + i;
-
+            
             // Send request on main thread
             minecraft.execute(() -> {
                 LocalPlayer player = minecraft.player;
@@ -240,23 +244,23 @@ public class PayManager {
                     String command = "/pay " + prefix;
                     ServerboundCommandSuggestionPacket packet = new ServerboundCommandSuggestionPacket(requestId, command);
                     player.connection.send(packet);
-
+                    
                     if (debugMode) {
                         player.displayClientMessage(net.minecraft.network.chat.Component.literal(
-                            String.format("§8[Debug] [%d/%d] Sent: /pay %s", index + 1, SCAN_PREFIXES_SINGLE.length,
+                            String.format("§8[Debug] [%d/%d] Sent: /pay %s", index + 1, SCAN_PREFIXES_SINGLE.length, 
                                 prefix.isEmpty() ? "(empty)" : prefix)
                         ), false);
                     }
                 }
             });
-
+            
             // Wait before next request (configurable interval)
             try {
                 Thread.sleep(scanInterval);
             } catch (InterruptedException e) {
                 break;
             }
-
+            
             // Show progress every 5 prefixes
             if (i % 5 == 0 || i == SCAN_PREFIXES_SINGLE.length - 1) {
                 final int progress = (i + 1) * 100 / SCAN_PREFIXES_SINGLE.length;
@@ -274,7 +278,7 @@ public class PayManager {
                 });
             }
         }
-
+        
         // Scan complete
         finishScan();
     }
@@ -285,7 +289,7 @@ public class PayManager {
         }
         scanCompleted = true;
         isTabScanning = false;
-
+        
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
             LocalPlayer player = minecraft.player;
@@ -309,33 +313,33 @@ public class PayManager {
         if (!isTabScanning) {
             return;
         }
-
+        
         // Check if this is one of our request IDs (any ID in our range)
         boolean isOurRequest = (requestId >= 10000 && requestId < 10000 + SCAN_PREFIXES_SINGLE.length);
         if (!isOurRequest) {
             return;
         }
-
+        
         // Check if we already processed this request (server can send duplicates)
         if (!processedRequestIds.add(requestId)) {
             // Already processed this request ID, ignore duplicate
             return;
         }
-
+        
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-
+        
         // Get the prefix for this request
         int prefixIndex = requestId - 10000;
         String prefix = "(unknown)";
         if (prefixIndex >= 0 && prefixIndex < SCAN_PREFIXES_SINGLE.length) {
             prefix = SCAN_PREFIXES_SINGLE[prefixIndex].isEmpty() ? "(empty)" : SCAN_PREFIXES_SINGLE[prefixIndex];
         }
-
+        
         int beforeCount, afterCount, newPlayers;
         synchronized (playerListLock) {
             beforeCount = tabScanPlayerList.size();
-
+            
             for (String suggestion : suggestions) {
                 String cleaned = suggestion.trim();
                 // Remove any formatting or extra characters
@@ -347,7 +351,7 @@ public class PayManager {
             afterCount = tabScanPlayerList.size();
             newPlayers = afterCount - beforeCount;
         }
-
+        
         // Debug output (only when debug mode is on)
         if (player != null && debugMode) {
             final String finalPrefix = prefix;
@@ -358,7 +362,7 @@ public class PayManager {
                 LocalPlayer p = minecraft.player;
                 if (p != null) {
                     p.displayClientMessage(net.minecraft.network.chat.Component.literal(
-                        String.format("§7[Debug] '%s': %d suggestions, +%d new (total: %d)",
+                        String.format("§7[Debug] '%s': %d suggestions, +%d new (total: %d)", 
                             finalPrefix, finalSuggestions, finalNew, finalTotal)
                     ), false);
                 }
@@ -381,14 +385,14 @@ public class PayManager {
     public List<String> getPlayersForAutocomplete() {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer localPlayer = minecraft.player;
-
+        
         if (localPlayer == null) {
             return Collections.emptyList();
         }
 
         String localPlayerName = localPlayer.getGameProfile().getName();
         Set<String> allPlayers = new HashSet<>();
-
+        
         // Add players from tab list
         ClientPacketListener connection = minecraft.getConnection();
         if (connection != null) {
@@ -397,20 +401,20 @@ public class PayManager {
                 allPlayers.add(info.getProfile().getName());
             }
         }
-
+        
         // Add players from tabscan
         synchronized (playerListLock) {
             allPlayers.addAll(tabScanPlayerList);
         }
-
+        
         // Add players from manual list
         synchronized (playerListLock) {
             allPlayers.addAll(manualPlayerList);
         }
-
+        
         // Remove self
         allPlayers.remove(localPlayerName);
-
+        
         return new ArrayList<>(allPlayers);
     }
 
@@ -426,11 +430,11 @@ public class PayManager {
      */
     public String getDebugPlayerLists() {
         StringBuilder sb = new StringBuilder();
-
+        
         Minecraft minecraft = Minecraft.getInstance();
         ClientPacketListener connection = minecraft.getConnection();
         int tabListCount = connection != null ? connection.getOnlinePlayers().size() : 0;
-
+        
         synchronized (playerListLock) {
             sb.append("§6=== Pay Everyone Debug Info ===\n");
             sb.append(String.format("§e Tab List Players: §f%d\n", tabListCount));
@@ -439,7 +443,7 @@ public class PayManager {
             sb.append(String.format("§e Excluded Players: §f%d\n", excludedPlayers.size()));
             sb.append(String.format("§e Total Unique (for payment): §f%d\n", getOnlinePlayers().size()));
         }
-
+        
         return sb.toString();
     }
 
@@ -448,7 +452,7 @@ public class PayManager {
      */
     public List<String> getPlayerListSample(String listType, int maxCount) {
         List<String> result = new ArrayList<>();
-
+        
         switch (listType.toLowerCase()) {
             case "tabscan":
                 synchronized (playerListLock) {
@@ -484,7 +488,7 @@ public class PayManager {
                 }
                 break;
         }
-
+        
         return result;
     }
 
@@ -496,13 +500,13 @@ public class PayManager {
     public List<String> getOnlinePlayers() {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer localPlayer = minecraft.player;
-
+        
         if (localPlayer == null) {
             return Collections.emptyList();
         }
 
         String localPlayerName = localPlayer.getGameProfile().getName();
-
+        
         // Priority: manual list > tab scan list > normal tab list
         List<String> sourceList;
         synchronized (playerListLock) {
@@ -524,7 +528,7 @@ public class PayManager {
                         .collect(Collectors.toList());
             }
         }
-
+        
         return sourceList.stream()
                 .filter(name -> !name.equals(localPlayerName)) // Exclude self
                 .filter(name -> !excludedPlayers.contains(name.toLowerCase())) // Exclude excluded players
@@ -542,7 +546,7 @@ public class PayManager {
 
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-
+        
         if (player == null) {
             return false;
         }
@@ -552,12 +556,12 @@ public class PayManager {
         // For full server lists, use /payall add or /payall import commands.
 
         List<String> playersToPay = new ArrayList<>(getOnlinePlayers());
-
+        
         if (playersToPay.isEmpty()) {
             player.displayClientMessage(net.minecraft.network.chat.Component.literal("§c[Pay Everyone] No players to pay!"), false);
             return false;
         }
-
+        
         // Randomize the order of players to pay
         Collections.shuffle(playersToPay);
 
@@ -565,7 +569,7 @@ public class PayManager {
         boolean isRange = amountOrRange.contains("-");
         long parsedMinAmount = 0;
         long parsedMaxAmount = 0;
-
+        
         if (isRange) {
             String[] parts = amountOrRange.split("-");
             if (parts.length != 2) {
@@ -604,10 +608,10 @@ public class PayManager {
 
         isPaying = true;
         shouldStop = false;
-
+        
         String amountDisplay = finalIsRange ? String.format("%d-%d", minAmount, maxAmount) : String.valueOf(minAmount);
         player.displayClientMessage(net.minecraft.network.chat.Component.literal(
-            String.format("§a[Pay Everyone] Starting to pay %d players %s money with %dms delay",
+            String.format("§a[Pay Everyone] Starting to pay %d players %s money with %dms delay", 
                 playersToPay.size(), amountDisplay, delayMs)
         ), false);
 
@@ -625,12 +629,12 @@ public class PayManager {
                 }
 
                 String playerName = playersToPay.get(i);
-
+                
                 // Generate random amount if range, otherwise use fixed amount
                 long amount = finalIsRange ? (minAmount + random.nextLong(maxAmount - minAmount + 1)) : minAmount;
-
+                
                 String command = String.format("pay %s %d", playerName, amount);
-
+                
                 // Send command to server as a chat command packet
                 minecraft.execute(() -> {
                     if (player != null && player.connection != null) {
@@ -646,7 +650,7 @@ public class PayManager {
                 });
 
                 paidCount[0]++;
-
+                
                 // Send progress message
                 final int currentIndex = i + 1;
                 final long finalAmount = amount;
@@ -681,7 +685,7 @@ public class PayManager {
                 });
             }
         });
-
+        
         return true;
     }
 
@@ -698,6 +702,90 @@ public class PayManager {
 
     public boolean isPaying() {
         return isPaying;
+    }
+    
+    // ============= Auto-confirm methods =============
+    
+    /**
+     * Set the slot ID to auto-click for confirmation menus.
+     * @param slotId The slot ID to click, or -1 to disable auto-confirm
+     */
+    public void setConfirmClickSlot(int slotId) {
+        this.confirmClickSlot = slotId;
+    }
+    
+    /**
+     * Get the current confirm click slot ID.
+     * @return The slot ID, or -1 if disabled
+     */
+    public int getConfirmClickSlot() {
+        return confirmClickSlot;
+    }
+    
+    /**
+     * Check if auto-confirm is enabled.
+     */
+    public boolean isAutoConfirmEnabled() {
+        return confirmClickSlot >= 0 && isPaying;
+    }
+    
+    /**
+     * Set the delay before auto-clicking the confirm slot.
+     * @param delayMs Delay in milliseconds
+     */
+    public void setConfirmClickDelay(long delayMs) {
+        this.confirmClickDelay = Math.max(50, delayMs); // Minimum 50ms
+    }
+    
+    /**
+     * Get the confirm click delay.
+     */
+    public long getConfirmClickDelay() {
+        return confirmClickDelay;
+    }
+    
+    /**
+     * Handle when a container screen is opened - auto-click if enabled.
+     * Called from mixin when a container is opened.
+     * @param containerId The container ID from the server
+     */
+    public void handleContainerOpened(int containerId) {
+        if (!isAutoConfirmEnabled()) {
+            return;
+        }
+        
+        final int slotToClick = confirmClickSlot;
+        final long delay = confirmClickDelay;
+        
+        // Schedule the click after a short delay to ensure the GUI is ready
+        CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                return;
+            }
+            
+            Minecraft minecraft = Minecraft.getInstance();
+            minecraft.execute(() -> {
+                LocalPlayer player = minecraft.player;
+                if (player != null && minecraft.gameMode != null) {
+                    // Click the specified slot (left click)
+                    minecraft.gameMode.handleInventoryMouseClick(
+                        containerId,
+                        slotToClick,
+                        0, // Left click
+                        net.minecraft.world.inventory.ClickType.PICKUP,
+                        player
+                    );
+                    
+                    if (debugMode) {
+                        player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                            String.format("§7[Debug] Auto-clicked slot %d in container %d", slotToClick, containerId)
+                        ), false);
+                    }
+                }
+            });
+        });
     }
 }
 
