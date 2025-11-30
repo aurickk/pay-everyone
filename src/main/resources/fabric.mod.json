@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "pay-everyone",
+	"version": "${version}",
+	"name": "Pay Everyone",
+	"description": "A client-side mod that allows you to pay everyone on a Minecraft server using the /pay command with customizable delays and player exclusions.",
+	"authors": [
+		"Aurick"
+	],
+	"contact": {
+		"homepage": "",
+		"sources": "https://github.com/aurickk/pay-everyone/"
+	},
+	"icon": "assets/pay-everyone/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"pay.everyone.mod.PayEveryone"
+		],
+		"client": [
+			"pay.everyone.mod.PayEveryoneClient"
+		]
+	},
+	"mixins": [
+		"pay-everyone.mixins.json",
+		{
+			"config": "pay-everyone.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"minecraft": ">=1.21 <=1.21.10",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
