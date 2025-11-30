@@ -3,6 +3,7 @@ package pay.everyone.mod.mixin.client;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -44,6 +45,15 @@ public class ClientPacketListenerMixin {
             }
             
             PayManager.getInstance().handleTabCompletionResponse(requestId, playerNames);
+        }
+    }
+    
+    @Inject(at = @At("TAIL"), method = "handleOpenScreen")
+    private void onOpenScreen(ClientboundOpenScreenPacket packet, CallbackInfo ci) {
+        // Check if auto-confirm is enabled and we're paying
+        if (PayManager.getInstance().isAutoConfirmEnabled()) {
+            int containerId = packet.getContainerId();
+            PayManager.getInstance().handleContainerOpened(containerId);
         }
     }
 }
