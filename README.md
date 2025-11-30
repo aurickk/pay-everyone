@@ -41,7 +41,7 @@
 ```
 /payinfo
 ```
-<img width="570" height="105" alt="image" src="https://github.com/user-attachments/assets/a91ad001-dde8-42a3-af92-2a05459dce27" />
+<img width="570" height="105" alt="Screenshot 2025-11-30 130108" src="https://github.com/user-attachments/assets/fcd8f183-0183-4341-a3d1-a41588f4ef62" />
 
 Displays a lists of logged players and excluded players on the pay list.
 #### Pay All Players
@@ -103,7 +103,7 @@ Exclude specific players from receiving payments. Autocomplete is available show
 ## How It Works
 
 1. **Player Discovery**: The mod collects players from multiple sources:
-   - Tab menu (limited to ~150 players)
+   - Default tab menu (limited to ~150 players)
    - Tab scan (queries server autocomplete for `/pay` command)
    - Manual player list (you add players)
 
@@ -163,7 +163,7 @@ The mod supports building for Minecraft versions:
 
 ### Tab Scan Not Finding Players
 
-- Ensure the server has a `/pay` command
+- Ensure the server has a `/pay [player] [amount]` command
 - Try increasing the scan interval: `/payall tabscan 500`
 - Enable debug mode to see what's happening: `/payall tabscan debug true`
 - Some servers may not support autocomplete for `/pay` - use `/payall add` instead
@@ -171,19 +171,7 @@ The mod supports building for Minecraft versions:
 ### Payment Commands Not Working
 
 - Verify you have permission to use `/pay` on the server
-- Check that the server recognizes the `/pay` command
 - Ensure you're not already in a payment process (use `/payall stop`)
-
-
-## Limitations
-
-- **Tab List Limit**: Default player discovery is limited to ~80-100 players visible in tab menu
-- **Server Dependency**: Requires server to have `/pay` command for tab scan to work
-- **Rate Limiting**: Very fast payment rates may trigger server rate limits
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
 
