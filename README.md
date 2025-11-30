@@ -15,9 +15,10 @@
 - **Random Amounts**: Support for random payment amounts within a range (e.g., 300-3000)
 - **Customizable Delays**: Set delay between each payment to prevent command spam kick
 - **Player Exclusions**: Exclude specific players from receiving payments
-- **Advanced Player Discovery**: 
-  - Logging online player in large servers where not all players are on the tab list
+- **Player Logging**: Logging online player in large servers where not all players are on the tab list
 - **Randomized Payment Order**: Payments are sent in random order to avoid patterns
+- **Auto-Confirm**: Automatically click confirmation buttons on servers with payment confirmation menus
+- **Keybinds**: Quick stop keybind (default: K) to instantly stop payments
 
 ## Requirements
 
@@ -34,6 +35,9 @@
 5. Launch Minecraft
 
 ## Usage
+### Demo Video
+
+https://github.com/user-attachments/assets/b05579a0-08e7-49ba-9e8b-71665d6cddd4 
 
 ### Basic Commands
 
@@ -41,8 +45,6 @@
 ```
 /payall info
 ```
-<img width="570" height="105" alt="Screenshot 2025-11-30 130108" src="https://github.com/user-attachments/assets/fcd8f183-0183-4341-a3d1-a41588f4ef62" />
-
 Displays a lists of logged players and excluded players on the pay list.
 #### Tab Scan
 ```
@@ -50,10 +52,10 @@ Displays a lists of logged players and excluded players on the pay list.
 /payall tabscan stop               # Stop scan in progress
 ```
 
-Tab scan queries the server's `/pay` command autocomplete to discover players beyond the tab list limit. This is useful for large servers with thousands of players that could not be include in the tab list.
+Tab scan queries the server's `/pay` command autocomplete to discover players beyond the tab list limit. This is useful for large servers with hundreds of players that could not be include in the tab list.
 
 **Note**: Moving while tab scan is in progress disrupts the process
-
+**Tip**: You can also press the **K** key (default keybind) to instantly stop tab scan
 
 #### Pay All Players
 ```
@@ -74,7 +76,7 @@ This will pay each player a random amount between 300 and 3000
 ```
 Stops the current payment process if one is running.
 
-
+**Tip**: You can also press the **K** key (default keybind) to instantly stop payments
 
 #### Exclude Players
 ```
@@ -95,6 +97,21 @@ Manually add players to the payment list.
 /payall remove exclude <player1> <player2>    # Remove from exclusion list
 /payall remove add <player1> <player2>       # Remove from manual add list
 ```
+### Auto-Confirm (Confirmation Menus)
+
+Some servers show a confirmation menu before processing each payment. The auto-confirm feature automatically clicks the confirm button for you.
+
+#### Set Confirm Slot
+```
+/payall confirmclickslot <slot>           # Enable auto-click on slot ID
+/payall confirmclickslot <slot> <delay>   # Enable with custom delay (50-2000ms)
+/payall confirmclickslot                  # Show current status
+/payall confirmclickslot off              # Disable auto-confirm
+```
+<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/d1d47821-481e-4a63-9856-e0f281ebb0af" />
+
+
+Chest inventory with slot IDs for reference
 
 #### Clear Lists
 ```
@@ -132,6 +149,12 @@ Manually add players to the payment list.
    - Collects all player names from server responses
    - Takes time but discovers many more players
 
+ **Auto-Confirm**: 
+   - When enabled, monitors for confirmation menus opening
+   - Automatically clicks the specified slot after a short delay
+   - Only active during payment process
+   - Configurable slot ID and click delay
+
 ## Building from Source
 
 ### Prerequisites
@@ -151,11 +174,11 @@ Manually add players to the payment list.
    
    **Linux/Mac**: Build for a specific version:
    ```bash
-   ./gradlew clean build "-PMC_VERSION=1.21.4"
+   ./gradlew clean build "-PMC_VERSION=[MINECRAFT_VERSION]"
    ```
 
 3. Built JARs will be in `build/libs/`:
-   - `pay-everyone-1.21.4-1.0.0.jar`
+   - `pay-everyone-[MINECRAFT_VERSION]-[MOD_VERSIOn].jar`
 
 ### Supported Versions
 
