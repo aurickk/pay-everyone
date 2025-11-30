@@ -55,6 +55,7 @@ Displays a lists of logged players and excluded players on the pay list.
 Tab scan queries the server's `/pay` command autocomplete to discover players beyond the tab list limit. This is useful for large servers with hundreds of players that could not be include in the tab list.
 
 **Note**: Moving while tab scan is in progress disrupts the process
+
 **Tip**: You can also press the **K** key (default keybind) to instantly stop tab scan
 
 #### Pay All Players
