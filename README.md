@@ -65,6 +65,8 @@ Tab scan queries the server's `/pay` command autocomplete to discover players be
 - `amount`: Payment amount 
 - `delay`: Milliseconds between each payment, left on blank default is `1000` (recommended to prevent kick).
 
+Pay all players sequentialy from the pay list in a random order.
+
 **Example with random amounts:**
 ```
 /payall 300-3000 
