@@ -6,7 +6,7 @@
 </p>
 <h1 align="center">Pay Everyone</h1>
 
-<p align="center">A client-side Fabric mod for Minecraft 1.21.x that automatically scans and pay all online players on multiplayer servers using the `/pay` command with customizable delays, player exclusions, and more player discovery features.</p>
+<p align="center">Become MrBeast</p>
 
 
 ## Features
